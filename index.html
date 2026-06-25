@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DawaLens — Identify. Verify. Protect.</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1C2B22">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --ink: #1C2B22;
+    --leaf: #3F7A5C;
+    --leaf-deep: #2A5840;
+    --clay: #C76B3D;
+    --foil: #E8E2D3;
+    --foil-dark: #D9D1BC;
+    --danger: #9B2E22;
+    --line: rgba(28,43,34,0.14);
+    --shadow: 0 1px 2px rgba(28,43,34,0.04), 0 8px 24px rgba(28,43,34,0.07);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    display:flex;
+    justify-content:center;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; }
+  .app {
+    width: 100%;
+    max-width: 460px;
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+    position: relative;
+  }
+
+  /* ============ HEADER ============ */
+  header {
+    padding: env(safe-area-inset-top, 18px) 24px 22px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 22px);
+    background: var(--ink);
+    color: var(--paper);
+    position: relative;
+    overflow: hidden;
+  }
+  .header-grid {
+    position:absolute; inset:0;
+    background-image: radial-gradient(circle, rgba(250,247,240,0.05) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+    opacity: 0.5;
+  }
+  .brand-row { display:flex; justify-content:space-between; align-items:flex-start; position:relative; z-index:1; }
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-size: 1.65rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .brand em { font-style: normal; color: #8FBFA0; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    margin-top: 6px;
+  }
+  .lang-switch {
+    display:flex;
+    background: rgba(250,247,240,0.08);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .lang-opt {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 6px 9px;
+    border-radius: 7px;
+    cursor:pointer;
+    color: rgba(250,247,240,0.55);
+    transition: all 0.15s;
+  }
+  .lang-opt.active { background: var(--leaf); color: white; }
+
+  .tagline {
+    font-family: 'Fraunces', serif;
+    font-size: 0.95rem;
+    font-weight: 400;
+    font-style: italic;
+    margin-top: 16px;
+    opacity: 0.85;
+    position:relative; z-index:1;
+    max-width: 280px;
+    line-height: 1.4;
+  }
+
+  /* ============ MAIN ============ */
+  main { flex:1; padding: 22px 20px 100px; display:flex; flex-direction:column; gap: 18px; }
+
+  /* Scan zone — die cut blister card */
+  .scan-card {
+    background: var(--foil);
+    border-radius: 22px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: var(--shadow);
+  }
+  .scan-card:active { transform: scale(0.985); }
+  .scan-card.dragover { outline: 2px dashed var(--leaf); }
+  .scan-inner {
+    padding: 38px 24px;
+    text-align:center;
+    position: relative;
+  }
+  .scan-cavity {
+    width: 84px; height: 84px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: var(--paper);
+    box-shadow: inset 0 2px 6px rgba(28,43,34,0.12), inset 0 -2px 4px rgba(255,255,255,0.6);
+    display:flex; align-items:center; justify-content:center;
+    position: relative;
+  }
+  .scan-cavity::before {
+    content:"";
+    position:absolute; inset:-6px;
+    border-radius:50%;
+    border: 1.5px dashed rgba(28,43,34,0.25);
+  }
+  .scan-cavity svg { width: 34px; height:34px; stroke: var(--leaf-deep); }
+  .scan-title { font-family:'Fraunces', serif; font-size: 1.15rem; font-weight: 600; }
+  .scan-sub { font-size: 0.82rem; color: rgba(28,43,34,0.58); margin-top: 5px; line-height: 1.4; }
+  #fileInput { display:none; }
+
+  .preview-wrap { position: relative; }
+  .preview-img { width:100%; max-height: 280px; object-fit:cover; display:block; border-radius: 22px 22px 0 0; }
+  .preview-retake {
+    position:absolute; top:12px; right:12px;
+    background: rgba(28,43,34,0.75);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Loading */
+  .loading { display:none; text-align:center; padding: 36px 10px; }
+  .loading.show { display:block; }
+  .scan-line-wrap {
+    width: 80px; height: 80px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--foil);
+    position: relative;
+    overflow:hidden;
+  }
+  .scan-line {
+    position:absolute; left:0; right:0; height: 3px;
+    background: var(--leaf);
+    box-shadow: 0 0 12px var(--leaf);
+    animation: scanmove 1.4s ease-in-out infinite;
+  }
+  @keyframes scanmove { 0%{top:8%;} 50%{top:85%;} 100%{top:8%;} }
+  .loading-text { font-size: 0.85rem; color: rgba(28,43,34,0.6); font-family:'JetBrains Mono', monospace; letter-spacing:0.02em; }
+
+  /* Quick actions */
+  .actions-row { display:flex; gap: 10px; }
+  .action-chip {
+    flex:1;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition: background 0.15s;
+  }
+  .action-chip:active { background: var(--foil); }
+  .action-chip .ic { font-size: 1.25rem; display:block; margin-bottom: 6px; }
+  .action-chip .lbl { font-size: 0.72rem; font-weight: 600; line-height:1.25; }
+
+  /* Result card — the signature blister-pop */
+  .result {
+    display:none;
+    background: white;
+    border-radius: 0 0 22px 22px;
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .result.show { display:block; animation: rise 0.45s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+  .result-no-preview { border-radius: 22px; }
+
+  .result-head { padding: 22px 22px 0; }
+  .result-name { font-family:'Fraunces', serif; font-size: 1.5rem; font-weight:700; line-height:1.15; }
+  .result-generic { font-size: 0.85rem; color: rgba(28,43,34,0.55); margin-top: 3px; }
+
+  .confidence-strip {
+    margin-top: 18px;
+    display:flex; align-items:center; gap: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+  .confidence-strip.tone-safe { background: rgba(63,122,92,0.1); }
+  .confidence-strip.tone-caution { background: rgba(199,107,61,0.12); }
+  .confidence-strip.tone-danger { background: rgba(155,46,34,0.1); }
+  .conf-num { font-family:'JetBrains Mono', monospace; font-size: 1.3rem; font-weight:700; flex-shrink:0; }
+  .tone-safe .conf-num { color: var(--leaf-deep); }
+  .tone-caution .conf-num { color: var(--clay); }
+  .tone-danger .conf-num { color: var(--danger); }
+  .conf-label { font-size: 0.78rem; line-height:1.35; }
+  .conf-label b { display:block; font-size: 0.86rem; }
+
+  .result-body { padding: 18px 22px 22px; }
+  .detail-row { display:flex; gap:12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .detail-row:last-of-type { border-bottom:none; }
+  .detail-ic { width:30px; flex-shrink:0; font-size: 1rem; opacity:0.7; }
+  .detail-text b { font-size: 0.83rem; display:block; margin-bottom:1px; }
+  .detail-text span { font-size: 0.8rem; color: rgba(28,43,34,0.6); line-height:1.4; }
+
+  .caveat-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--foil);
+    border-radius: 12px;
+    font-size: 0.74rem;
+    color: rgba(28,43,34,0.65);
+    line-height: 1.5;
+    display:flex; gap:8px;
+  }
+
+  .result-actions { display:flex; gap:10px; margin-top:18px; }
+  .btn {
+    flex:1; padding: 13px; border-radius:12px;
+    text-align:center; font-weight:700; font-size:0.84rem;
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn-primary { background: var(--ink); color: var(--paper); }
+  .btn-primary:active { background: var(--leaf-deep); }
+  .btn-ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+
+  .err-box {
+    display:none;
+    background: rgba(155,46,34,0.08);
+    border: 1px solid rgba(155,46,34,0.2);
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 0.82rem;
+    color: var(--danger);
+  }
+  .err-box.show { display:block; }
+
+  /* Bottom nav */
+  nav.tabbar {
+    position: fixed;
+    bottom: 0; left:50%; transform:translateX(-50%);
+    width: 100%; max-width: 460px;
+    background: rgba(250,247,240,0.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    display:flex;
+    padding: 10px 14px calc(env(safe-area-inset-bottom,0px) + 10px);
+    z-index: 30;
+  }
+  .tab {
+    flex:1; text-align:center; cursor:pointer;
+    color: rgba(28,43,34,0.4);
+    padding: 5px 0;
+  }
+  .tab.active { color: var(--ink); }
+  .tab .t-ic { font-size: 1.15rem; display:block; }
+  .tab .t-lbl { font-size: 0.65rem; font-weight:600; margin-top:3px; }
+
+  /* Modals */
+  .sheet-overlay {
+    position: fixed; inset:0; background: rgba(28,43,34,0.45);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .sheet-overlay.show { display:flex; }
+  .sheet {
+    background: var(--paper); width:100%; max-width: 460px;
+    border-radius: 24px 24px 0 0; padding: 26px 22px calc(env(safe-area-inset-bottom,0px) + 28px);
+    max-height: 85vh; overflow-y:auto;
+    animation: sheetup 0.3s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes sheetup { from{transform:translateY(100%);} to{transform:translateY(0);} }
+  .sheet-handle { width:36px; height:4px; background:var(--line); border-radius:99px; margin: 0 auto 18px; }
+  .sheet-title { font-family:'Fraunces',serif; font-size:1.25rem; font-weight:700; margin-bottom:16px; }
+
+  .field { width:100%; padding:13px 15px; border-radius:12px; border:1px solid var(--line); background:white; font-size:0.86rem; margin-bottom:10px; font-family:inherit; }
+  textarea.field { resize:none; height:78px; }
+  .sheet-close { width:100%; padding:14px; background:var(--ink); color:var(--paper); border:none; border-radius:12px; font-weight:700; margin-top:6px; }
+
+  .pin { display:flex; gap:12px; padding: 12px 0; border-bottom:1px solid var(--line); }
+  .pin:last-child { border-bottom:none; }
+  .pin-dot { width:8px; height:8px; border-radius:50%; background:var(--danger); margin-top:6px; flex-shrink:0; }
+  .pin-body b { font-size:0.84rem; display:block; }
+  .pin-body span { font-size:0.76rem; color:rgba(28,43,34,0.55); }
+
+  .empty-state { text-align:center; padding: 30px 10px; color: rgba(28,43,34,0.5); font-size:0.82rem; }
+
+  ::selection { background: var(--leaf); color:white; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-grid"></div>
+    <div class="brand-row">
+      <div>
+        <div class="brand">Dawa<em>Lens</em></div>
+        <div class="eyebrow" id="eyebrowText">VISUAL MEDICINE SAFETY</div>
+      </div>
+      <div class="lang-switch" id="langSwitch">
+        <div class="lang-opt active" data-lang="en">EN</div>
+        <div class="lang-opt" data-lang="hi">हि</div>
+        <div class="lang-opt" data-lang="te">తె</div>
+        <div class="lang-opt" data-lang="ta">த</div>
+      </div>
+    </div>
+    <div class="tagline" id="taglineText">"Point your camera at any pill, strip, or bottle — even with no label left."</div>
+  </header>
+
+  <main>
+    <div class="scan-card" id="scanCard">
+      <input type="file" id="fileInput" accept="image/*" capture="environment">
+      <div id="scanCardInner">
+        <div class="scan-inner">
+          <div class="scan-cavity">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <div class="scan-title" id="scanTitle">Scan a medicine</div>
+          <div class="scan-sub" id="scanSub">Loose pill, cut strip, or bottle. No label required.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading" id="loadingBox">
+      <div class="scan-line-wrap"><div class="scan-line"></div></div>
+      <div class="loading-text" id="loadingText">READING SHAPE · COLOUR · MARKINGS</div>
+    </div>
+
+    <div class="err-box" id="errBox"></div>
+
+    <div class="actions-row">
+      <div class="action-chip" id="btnInteraction">
+        <span class="ic">⚠️</span>
+        <span class="lbl" id="lblInteraction">Interactions</span>
+      </div>
+      <div class="action-chip" id="btnReport">
+        <span class="ic">📍</span>
+        <span class="lbl" id="lblReport">Report fake</span>
+      </div>
+      <div class="action-chip" id="btnMap">
+        <span class="ic">🗺️</span>
+        <span class="lbl" id="lblMap">Local alerts</span>
+      </div>
+    </div>
+
+    <div class="result" id="resultCard"></div>
+  </main>
+
+  <nav class="tabbar">
+    <div class="tab active"><span class="t-ic">🔍</span><span class="t-lbl" id="navScan">Scan</span></div>
+    <div class="tab" id="navInteraction"><span class="t-ic">⚠️</span><span class="t-lbl" id="navInteractionLbl">Check</span></div>
+    <div class="tab" id="navMap"><span class="t-ic">🗺️</span><span class="t-lbl" id="navMapLbl">Alerts</span></div>
+    <div class="tab" id="navAbout"><span class="t-ic">ℹ️</span><span class="t-lbl" id="navAboutLbl">About</span></div>
+  </nav>
+</div>
+
+<!-- Interaction sheet -->
+<div class="sheet-overlay" id="interactionModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetInteractionTitle">Check drug interactions</div>
+    <input class="field" id="med1" placeholder="Medicine 1 — e.g. Dolo 650">
+    <input class="field" id="med2" placeholder="Medicine 2 — e.g. Warfarin">
+    <div id="interactionResult"></div>
+    <button class="sheet-close" id="closeInteraction">Close</button>
+  </div>
+</div>
+
+<!-- Report sheet -->
+<div class="sheet-overlay" id="reportModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetReportTitle">Report a suspicious medicine</div>
+    <input class="field" id="reportLocation" placeholder="Location — e.g. Sangareddy, Telangana">
+    <textarea class="field" id="reportDetails" placeholder="What looked wrong about it?"></textarea>
+    <button class="sheet-close" id="submitReport">Submit report</button>
+  </div>
+</div>
+
+<!-- Map sheet -->
+<div class="sheet-overlay" id="mapModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetMapTitle">Reports near you</div>
+    <div id="heatmapList"></div>
+    <button class="sheet-close" id="closeMap">Close</button>
+  </div>
+</div>
+
+<!-- About sheet -->
+<div class="sheet-overlay" id="aboutModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">About DawaLens</div>
+    <p style="font-size:0.85rem; line-height:1.6; color:rgba(28,43,34,0.75);">
+      DawaLens uses AI vision to help identify medicines from their physical appearance alone — no packaging needed. It is a safety companion, not a medical diagnosis tool.
+      <br><br>
+      <b>Always confirm with a pharmacist or doctor</b> before taking any medicine. DawaLens is a hackathon prototype built for Samsung Solve for Tomorrow 2026.
+    </p>
+    <button class="sheet-close" id="closeAbout">Close</button>
+  </div>
+</div>
+
+<script>
+// ============== TRANSLATIONS ==============
+const T = {
+  en: { eyebrow:"VISUAL MEDICINE SAFETY", tagline:'"Point your camera at any pill, strip, or bottle — even with no label left."',
+    scanTitle:"Scan a medicine", scanSub:"Loose pill, cut strip, or bottle. No label required.",
+    loading:"READING SHAPE · COLOUR · MARKINGS", interaction:"Interactions", report:"Report fake", map:"Local alerts",
+    navScan:"Scan", navCheck:"Check", navAlerts:"Alerts", navAbout:"About",
+    sheetInteraction:"Check drug interactions", sheetReport:"Report a suspicious medicine", sheetMap:"Reports near you",
+    caveat:"This is an AI estimate based on appearance, not a lab test. Always confirm with a pharmacist before taking any medicine.",
+    retake: "Retake", speak: "Speak result", scanAgain: "Scan again",
+    usedFor: "Likely used for", physicalMatch: "What we saw", errTitle: "Couldn't read that image",
+    errBody: "Try better lighting, fill the frame with the pill or strip, and avoid blur."
+  },
+  hi: { eyebrow:"दवा सुरक्षा जांच", tagline:'"किसी भी गोली, स्ट्रिप या बोतल पर कैमरा रखें — लेबल न होने पर भी।"',
+    scanTitle:"दवा स्कैन करें", scanSub:"खुली गोली, कटी स्ट्रिप, या बोतल। लेबल जरूरी नहीं।",
+    loading:"आकार · रंग · निशान पढ़े जा रहे हैं", interaction:"इंटरैक्शन", report:"नकली रिपोर्ट", map:"लोकल अलर्ट",
+    navScan:"स्कैन", navCheck:"जांच", navAlerts:"अलर्ट", navAbout:"जानकारी",
+    sheetInteraction:"दवा इंटरैक्शन जांचें", sheetReport:"संदिग्ध दवा रिपोर्ट करें", sheetMap:"आसपास की रिपोर्ट",
+    caveat:"यह AI का अनुमान है, लैब टेस्ट नहीं। दवा लेने से पहले फार्मासिस्ट से पुष्टि करें।",
+    retake:"फिर से लें", speak:"सुनें", scanAgain:"फिर स्कैन करें",
+    usedFor:"संभावित उपयोग", physicalMatch:"हमने क्या देखा", errTitle:"तस्वीर नहीं पढ़ी जा सकी",
+    errBody:"बेहतर रोशनी में, गोली या स्ट्रिप को पूरी फ्रेम में रखकर दोबारा कोशिश करें।"
+  },
+  te: { eyebrow:"మెడిసిన్ సేఫ్టీ స్కాన్", tagline:'"లేబుల్ లేకపోయినా, ఏ టాబ్లెట్, స్ట్రిప్ లేదా బాటిల్‌పైనా కెమెరా పెట్టండి."',
+    scanTitle:"మందును స్కాన్ చేయండి", scanSub:"లేబుల్ లేని టాబ్లెట్, స్ట్రిప్ లేదా బాటిల్.",
+    loading:"ఆకారం · రంగు · గుర్తులు చదువుతోంది", interaction:"ఇంటరాక్షన్", report:"నకిలీ రిపోర్ట్", map:"లోకల్ అలర్ట్స్",
+    navScan:"స్కాన్", navCheck:"చెక్", navAlerts:"అలర్ట్స్", navAbout:"గురించి",
+    sheetInteraction:"మందుల ఇంటరాక్షన్ చెక్", sheetReport:"అనుమానిత మందు రిపోర్ట్", sheetMap:"సమీప రిపోర్టులు",
+    caveat:"ఇది AI అంచనా మాత్రమే, ల్యాబ్ టెస్ట్ కాదు. మందు తీసుకునే ముందు ఫార్మసిస్ట్‌ను సంప్రదించండి.",
+    retake:"మళ్ళీ తీయండి", speak:"వినండి", scanAgain:"మళ్ళీ స్కాన్",
+    usedFor:"ఉపయోగం", physicalMatch:"మేము చూసింది", errTitle:"చిత్రం చదవలేకపోయాం",
+    errBody:"మంచి వెలుతురులో, టాబ్లెట్‌ను పూర్తిగా ఫ్రేమ్‌లో పెట్టి మళ్ళీ ప్రయత్నించండి."
+  },
+  ta: { eyebrow:"மருந்து பாதுகாப்பு ஸ்கேன்", tagline:'"லேபிள் இல்லாவிட்டாலும், எந்த மாத்திரை, ஸ்ட்ரிப் அல்லது பாட்டிலிலும் கேமராவை வையுங்கள்."',
+    scanTitle:"மருந்தை ஸ்கேன் செய்யவும்", scanSub:"லேபிள் இல்லாத மாத்திரை, ஸ்ட்ரிப் அல்லது பாட்டில்.",
+    loading:"வடிவம் · நிறம் · குறிகள் படிக்கிறது", interaction:"இடைவினை", report:"போலி புகார்", map:"உள்ளூர் எச்சரிக்கை",
+    navScan:"ஸ்கேன்", navCheck:"சரிபார்", navAlerts:"எச்சரிக்கை", navAbout:"பற்றி",
+    sheetInteraction:"மருந்து இடைவினை சரிபார்ப்பு", sheetReport:"சந்தேகமான மருந்து புகார்", sheetMap:"அருகிலுள்ள புகார்கள்",
+    caveat:"இது AI மதிப்பீடு மட்டுமே, லேப் டெஸ்ட் அல்ல. மருந்து உட்கொள்ளும் முன் மருந்தாளரிடம் உறுதிப்படுத்தவும்.",
+    retake:"மீண்டும் எடு", speak:"கேளுங்கள்", scanAgain:"மீண்டும் ஸ்கேன்",
+    usedFor:"பயன்பாடு", physicalMatch:"நாம் பார்த்தது", errTitle:"படத்தைப் படிக்க முடியவில்லை",
+    errBody:"நல்ல வெளிச்சத்தில், மாத்திரையை முழுமையாக சட்டகத்தில் வைத்து மீண்டும் முயற்சிக்கவும்."
+  }
+};
+let currentLang = 'en';
+
+const INTERACTIONS = {
+  "aspirin|warfarin": "High risk: significantly increases internal bleeding risk. Avoid this combination without medical supervision.",
+  "dolo|alcohol": "Caution: paracetamol with alcohol increases strain on the liver.",
+  "paracetamol|alcohol": "Caution: paracetamol with alcohol increases strain on the liver.",
+  "metformin|alcohol": "Caution: combining these can raise the risk of lactic acidosis.",
+  "ibuprofen|aspirin": "Caution: combined use raises the risk of stomach bleeding.",
+  "combiflam|aspirin": "Caution: combined use raises the risk of stomach bleeding."
+};
+
+let HEATMAP_DATA = [
+  { loc: "Nizamabad, Telangana", note: "Suspected fake Augmentin strip — colour mismatch", time: "2 days ago" },
+  { loc: "Bharatpur, Rajasthan", note: "Cough syrup reported with unusual smell", time: "5 days ago" },
+  { loc: "Sangli, Maharashtra", note: "Loose paracetamol tablets, no markings visible", time: "1 week ago" }
+];
+
+function applyTranslations() {
+  const t = T[currentLang];
+  document.getElementById('eyebrowText').textContent = t.eyebrow;
+  document.getElementById('taglineText').textContent = t.tagline;
+  document.getElementById('scanTitle').textContent = t.scanTitle;
+  document.getElementById('scanSub').textContent = t.scanSub;
+  document.getElementById('loadingText').textContent = t.loading;
+  document.getElementById('lblInteraction').textContent = t.interaction;
+  document.getElementById('lblReport').textContent = t.report;
+  document.getElementById('lblMap').textContent = t.map;
+  document.getElementById('navScan').textContent = t.navScan;
+  document.getElementById('navInteractionLbl').textContent = t.navCheck;
+  document.getElementById('navMapLbl').textContent = t.navAlerts;
+  document.getElementById('navAboutLbl').textContent = t.navAbout;
+  document.getElementById('sheetInteractionTitle').textContent = t.sheetInteraction;
+  document.getElementById('sheetReportTitle').textContent = t.sheetReport;
+  document.getElementById('sheetMapTitle').textContent = t.sheetMap;
+}
+
+document.getElementById('langSwitch').addEventListener('click', (e) => {
+  const opt = e.target.closest('.lang-opt');
+  if (!opt) return;
+  document.querySelectorAll('.lang-opt').forEach(o => o.classList.remove('active'));
+  opt.classList.add('active');
+  currentLang = opt.dataset.lang;
+  applyTranslations();
+});
+
+// ============== SCAN FLOW (REAL CLAUDE VISION) ==============
+const scanCard = document.getElementById('scanCard');
+const fileInput = document.getElementById('fileInput');
+const loadingBox = document.getElementById('loadingBox');
+const resultCard = document.getElementById('resultCard');
+const scanCardInner = document.getElementById('scanCardInner');
+const errBox = document.getElementById('errBox');
+
+scanCard.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const base64Full = evt.target.result;
+    scanCardInner.innerHTML = `
+      <div class="preview-wrap">
+        <img src="${base64Full}" class="preview-img">
+        <div class="preview-retake" id="retakeBtn">${T[currentLang].retake}</div>
+      </div>`;
+    document.getElementById('retakeBtn').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      resetScan();
+    });
+    runScan(base64Full, file.type);
+  };
+  reader.readAsDataURL(file);
+});
+
+async function runScan(base64Full, mimeType) {
+  resultCard.classList.remove('show');
+  errBox.classList.remove('show');
+  loadingBox.classList.add('show');
+
+  const base64Data = base64Full.split(',')[1];
+
+  try {
+    // Calls our own serverless function (api/scan.js) — the AI key
+    // lives only on the server, never in this browser code.
+    const response = await fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64: base64Data, mimeType: mimeType || "image/jpeg" })
+    });
+
+    const parsed = await response.json();
+
+    loadingBox.classList.remove('show');
+
+    if (!response.ok) {
+      console.error("DawaLens server error:", parsed);
+      showError();
+      return;
+    }
+
+    if (!parsed.isReadable) {
+      showError();
+      return;
+    }
+    showResult(parsed);
+
+  } catch (err) {
+    console.error("DawaLens scan error:", err);
+    loadingBox.classList.remove('show');
+    showError();
+  }
+}
+
+function showError() {
+  const t = T[currentLang];
+  errBox.innerHTML = `<b>${t.errTitle}</b><div style="margin-top:6px; opacity:0.85;">${t.errBody}</div>`;
+  errBox.classList.add('show');
+}
+
+function showResult(drug) {
+  const t = T[currentLang];
+  const conf = drug.confidence;
+  let tone = 'tone-danger', toneLabel = 'Low confidence — verify carefully';
+  if (conf >= 70) { tone = 'tone-safe'; toneLabel = 'Reasonably confident match'; }
+  else if (conf >= 40) { tone = 'tone-caution'; toneLabel = 'Partial match — verify with pharmacist'; }
+
+  const hasPreview = !!document.querySelector('.preview-img');
+
+  resultCard.innerHTML = `
+    <div class="result-head">
+      <div class="result-name">${escapeHtml(drug.likelyName)}</div>
+      <div class="result-generic">${escapeHtml(drug.genericGuess)}</div>
+    </div>
+    <div class="result-body">
+      <div class="confidence-strip ${tone}">
+        <div class="conf-num">${conf}%</div>
+        <div class="conf-label"><b>${toneLabel}</b>AI visual estimate, not a lab result</div>
+      </div>
+
+      <div class="detail-row">
+        <div class="detail-ic">💊</div>
+        <div class="detail-text"><b>${t.usedFor}</b><span>${escapeHtml(drug.commonUse)}</span></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-ic">🔍</div>
+        <div class="detail-text"><b>${t.physicalMatch}</b><span>${escapeHtml(drug.physicalDescription)}</span></div>
+      </div>
+
+      <div class="caveat-box">⚠️ ${t.caveat}</div>
+
+      <div class="result-actions">
+        <button class="btn btn-primary" id="speakBtn">🔊 ${t.speak}</button>
+        <button class="btn btn-ghost" id="rescanBtn">${t.scanAgain}</button>
+      </div>
+    </div>
+  `;
+  resultCard.classList.toggle('result-no-preview', !hasPreview);
+  resultCard.classList.add('show');
+
+  document.getElementById('speakBtn').addEventListener('click', () => speakResult(drug.likelyName));
+  document.getElementById('rescanBtn').addEventListener('click', resetScan);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function speakResult(name) {
+  const langMap = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN', ta: 'ta-IN' };
+  const prefixMap = { en: "This looks like", hi: "यह दिखती है", te: "ఇది కనిపిస్తోంది", ta: "இது தோன்றுகிறது" };
+  const utterance = new SpeechSynthesisUtterance(`${prefixMap[currentLang]} ${name}`);
+  utterance.lang = langMap[currentLang] || 'en-IN';
+  speechSynthesis.speak(utterance);
+}
+
+function resetScan() {
+  const t = T[currentLang];
+  scanCardInner.innerHTML = `
+    <div class="scan-inner">
+      <div class="scan-cavity">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:#2A5840"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="scan-title">${t.scanTitle}</div>
+      <div class="scan-sub">${t.scanSub}</div>
+    </div>`;
+  resultCard.classList.remove('show');
+  errBox.classList.remove('show');
+  fileInput.value = '';
+}
+
+// ============== INTERACTION CHECKER ==============
+const interactionModal = document.getElementById('interactionModal');
+function openSheet(el) { el.classList.add('show'); }
+function closeSheet(el) { el.classList.remove('show'); }
+
+document.getElementById('btnInteraction').addEventListener('click', () => openSheet(interactionModal));
+document.getElementById('navInteraction').addEventListener('click', () => openSheet(interactionModal));
+document.getElementById('closeInteraction').addEventListener('click', () => {
+  closeSheet(interactionModal);
+  document.getElementById('interactionResult').innerHTML = '';
+  document.getElementById('med1').value = '';
+  document.getElementById('med2').value = '';
+});
+document.getElementById('med1').addEventListener('input', checkInteraction);
+document.getElementById('med2').addEventListener('input', checkInteraction);
+
+function checkInteraction() {
+  const m1 = document.getElementById('med1').value.trim().toLowerCase();
+  const m2 = document.getElementById('med2').value.trim().toLowerCase();
+  const box = document.getElementById('interactionResult');
+  if (!m1 || !m2) { box.innerHTML = ''; return; }
+  let found = null;
+  for (const k in INTERACTIONS) {
+    const parts = k.split('|');
+    const w1 = m1.split(' ')[0], w2 = m2.split(' ')[0];
+    if ((parts[0].includes(w1) || w1.includes(parts[0])) && (parts[1].includes(w2) || w2.includes(parts[1]))) { found = INTERACTIONS[k]; break; }
+    if ((parts[0].includes(w2) || w2.includes(parts[0])) && (parts[1].includes(w1) || w1.includes(parts[1]))) { found = INTERACTIONS[k]; break; }
+  }
+  box.innerHTML = found
+    ? `<div class="caveat-box" style="background:rgba(155,46,34,0.1); color:#9B2E22;">⚠️ ${found}</div>`
+    : `<div class="caveat-box" style="background:rgba(63,122,92,0.1); color:#2A5840;">✅ No known interaction found in our sample database. Always confirm with a pharmacist.</div>`;
+}
+
+// ============== REPORT ==============
+const reportModal = document.getElementById('reportModal');
+document.getElementById('btnReport').addEventListener('click', () => openSheet(reportModal));
+document.getElementById('submitReport').addEventListener('click', () => {
+  const loc = document.getElementById('reportLocation').value.trim();
+  const details = document.getElementById('reportDetails').value.trim();
+  if (loc && details) HEATMAP_DATA.unshift({ loc, note: details, time: "just now" });
+  document.getElementById('reportLocation').value = '';
+  document.getElementById('reportDetails').value = '';
+  closeSheet(reportModal);
+});
+
+// ============== MAP ==============
+const mapModal = document.getElementById('mapModal');
+function renderMap() {
+  const list = document.getElementById('heatmapList');
+  list.innerHTML = HEATMAP_DATA.length ? HEATMAP_DATA.map(p => `
+    <div class="pin">
+      <div class="pin-dot"></div>
+      <div class="pin-body"><b>${escapeHtml(p.loc)}</b><span>${escapeHtml(p.note)} · ${p.time}</span></div>
+    </div>`).join('') : `<div class="empty-state">No reports yet in your area.</div>`;
+}
+document.getElementById('btnMap').addEventListener('click', () => { renderMap(); openSheet(mapModal); });
+document.getElementById('navMap').addEventListener('click', () => { renderMap(); openSheet(mapModal); });
+document.getElementById('closeMap').addEventListener('click', () => closeSheet(mapModal));
+
+// ============== ABOUT ==============
+const aboutModal = document.getElementById('aboutModal');
+document.getElementById('navAbout').addEventListener('click', () => openSheet(aboutModal));
+document.getElementById('closeAbout').addEventListener('click', () => closeSheet(aboutModal));
+
+// nav tab active states
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+applyTranslations();
+
+// ============== PWA SERVICE WORKER (basic) ==============
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    self.addEventListener('install', e => self.skipWaiting());
+    self.addEventListener('fetch', e => {});
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "dawalens",
+  "version": "1.0.0",
+  "description": "AI medicine safety scanner - identifies pills, strips and bottles without labels",
+  "private": true
+}

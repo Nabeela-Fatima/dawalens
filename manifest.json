@@ -1,0 +1,10 @@
+{
+  "name": "DawaLens — Identify. Verify. Protect.",
+  "short_name": "DawaLens",
+  "description": "AI medicine safety scanner — identifies pills, strips and bottles without labels.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FAF7F0",
+  "theme_color": "#1C2B22",
+  "orientation": "portrait"
+}
